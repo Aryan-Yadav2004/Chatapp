@@ -1,17 +1,24 @@
 "use client";
 
 import { useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Search, MessageSquarePlus } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 import debounce from "lodash.debounce";
+import { useMutation } from "convex/react";
+import { Id } from "../../../convex/_generated/dataModel";
 
-export function UserList() {
+interface UserListProps {
+    onSelectConversation?: (conversationId: Id<"conversations">, otherUser: { name: string, avatarUrl: string }) => void;
+}
+
+export function UserList({ onSelectConversation }: UserListProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
+    const createConversation = useMutation(api.conversations.getOrCreateConversation);
 
     // Debounce the search input so we don't hammer the database on every keystroke
     const updateSearch = useCallback(
@@ -42,7 +49,7 @@ export function UserList() {
                     <Input
                         placeholder="Search users..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                         className="pl-9 bg-zinc-100 dark:bg-zinc-900 border-none rounded-full"
                     />
                 </div>
@@ -62,13 +69,20 @@ export function UserList() {
                     </div>
                 ) : (
                     <div className="p-2 space-y-1">
-                        {users.map((user) => (
+                        {users.map((user: { _id: Id<"users">; clerkId: string; name: string; avatarUrl: string }) => (
                             <button
                                 key={user._id}
                                 className="w-full flex items-center gap-3 p-3 text-left rounded-xl transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900"
-                                onClick={() => {
-                                    // Phase 3: Create conversation when clicked
-                                    console.log("Create conversation with", user.name);
+                                onClick={async () => {
+                                    if (onSelectConversation) {
+                                        try {
+                                            // Note: getOrCreateConversation uses the Clerk ID
+                                            const conversationId = await createConversation({ otherUserId: user.clerkId });
+                                            onSelectConversation(conversationId, { name: user.name, avatarUrl: user.avatarUrl });
+                                        } catch (error) {
+                                            console.error("Failed to create conversation:", error);
+                                        }
+                                    }
                                 }}
                             >
                                 <Avatar>
