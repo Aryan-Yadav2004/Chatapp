@@ -7,6 +7,8 @@ import { useUser } from "@clerk/nextjs";
 import { MessageInput } from "./MessageInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatMessageTime } from "@/lib/utils";
+import { useEffect, useRef } from "react";
 
 export function ChatWindow({ conversationId, otherUser }: {
     conversationId: Id<"conversations">,
@@ -45,7 +47,7 @@ export function ChatWindow({ conversationId, otherUser }: {
                     </div>
                 ) : (
                     <div className="space-y-4 pb-4">
-                        {messages.map((message: { _id: Id<"messages">; sender: string; content: string }) => {
+                        {messages.map((message: { _id: Id<"messages">; sender: string; content: string; _creationTime: number }) => {
                             const isMine = message.sender === user?.id;
 
                             return (
@@ -61,6 +63,12 @@ export function ChatWindow({ conversationId, otherUser }: {
                                     >
                                         <p className="whitespace-pre-wrap break-words text-sm sm:text-base">{message.content}</p>
                                         {/* Timestamp will go here in Phase 4 */}
+                                        <div
+                                            className={`text-[10px] sm:text-xs mt-1 text-right ${isMine ? "text-blue-100" : "text-zinc-400 dark:text-zinc-500"
+                                                }`}
+                                        >
+                                            {formatMessageTime(message._creationTime)}
+                                        </div>
                                     </div>
                                 </div>
                             );
