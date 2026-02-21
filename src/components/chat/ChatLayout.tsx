@@ -36,7 +36,7 @@ export function ChatLayout() {
         <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950 overflow-hidden text-zinc-900 dark:text-zinc-100">
             {/* Sidebar: hidden on mobile if there is an active conversation, shown on desktop */}
             <div className={`${activeConversation ? 'hidden md:block' : 'block'} h-full`}>
-                <Sidebar onSelectConversation={(id, user) => setActiveConversation({ id, otherUser: user as any })} />
+                <Sidebar onSelectConversation={(id, user) => setActiveConversation({ id, otherUser: user })} />
             </div>
 
             {/* Chat Area: shown on mobile only if there is an active conversation, shown on desktop */}

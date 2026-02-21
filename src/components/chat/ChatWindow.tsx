@@ -30,6 +30,9 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
     });
     const isOnline = onlineStatuses?.[otherUser.clerkId] ?? false;
 
+    const typingUsers = useQuery(api.typing.getTypingUsers, { conversationId });
+    const isOtherUserTyping = typingUsers?.includes(otherUser.clerkId) ?? false;
+
     if (messages === undefined) {
         return <div className="flex-1 flex items-center justify-center p-8 text-zinc-500">Loading messages...</div>;
     }
@@ -137,6 +140,20 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
                     </div>
                 )}
             </ScrollArea>
+
+            {/* Typing Indicator */}
+            {isOtherUserTyping && (
+                <div className="px-6 py-2 bg-zinc-50 dark:bg-black">
+                    <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 text-sm">
+                        <span className="font-medium">{otherUser.name}</span> is typing
+                        <span className="flex gap-1 ml-1">
+                            <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                            <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                            <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                        </span>
+                    </div>
+                </div>
+            )}
 
             {/* Message Input Container */}
             <MessageInput conversationId={conversationId} />

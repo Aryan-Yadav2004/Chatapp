@@ -25,4 +25,9 @@ export default defineSchema({
     clerkId: v.string(),
     updated: v.number(),
   }).index("by_clerk_id", ["clerkId"]),
+  typing: defineTable({
+    conversationId: v.id("conversations"),
+    clerkId: v.string(),
+    updated: v.number(),
+  }).index("by_conversation", ["conversationId"]),
 });
