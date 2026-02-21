@@ -1,23 +1,42 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import { ChatWindow } from "@/components/chat/ChatWindow";
+import { usePresence } from "@/hooks/usePresence";
 
 export function ChatLayout() {
     const [activeConversation, setActiveConversation] = useState<{
         id: Id<"conversations">;
-        otherUser: { name: string; avatarUrl: string };
+        otherUser: { name: string; avatarUrl: string; clerkId: string };
     } | null>(null);
+
+    const { isAuthenticated } = useConvexAuth();
+    const storeUser = useMutation(api.users.store);
+
+    usePresence();
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        const store = async () => {
+            try {
+                await storeUser();
+            } catch (error) {
+                console.error("Failed to store user:", error);
+            }
+        };
+        store();
+    }, [isAuthenticated, storeUser]);
 
     return (
         <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950 overflow-hidden text-zinc-900 dark:text-zinc-100">
             {/* Sidebar: hidden on mobile if there is an active conversation, shown on desktop */}
             <div className={`${activeConversation ? 'hidden md:block' : 'block'} h-full`}>
-                <Sidebar onSelectConversation={(id, user) => setActiveConversation({ id, otherUser: user })} />
+                <Sidebar onSelectConversation={(id, user) => setActiveConversation({ id, otherUser: user as any })} />
             </div>
 
             {/* Chat Area: shown on mobile only if there is an active conversation, shown on desktop */}

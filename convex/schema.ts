@@ -21,4 +21,8 @@ export default defineSchema({
     sender: v.string(), // Clerk ID
     content: v.string(),
   }).index("by_conversation", ["conversationId"]),
+  presence: defineTable({
+    clerkId: v.string(),
+    updated: v.number(),
+  }).index("by_clerk_id", ["clerkId"]),
 });

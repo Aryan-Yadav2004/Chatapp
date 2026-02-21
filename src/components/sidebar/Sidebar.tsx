@@ -5,7 +5,7 @@ import { UserButton } from "@clerk/nextjs";
 import { Id } from "../../../convex/_generated/dataModel";
 
 interface SidebarProps {
-    onSelectConversation?: (conversationId: Id<"conversations">, otherUser: { name: string, avatarUrl: string }) => void;
+    onSelectConversation?: (conversationId: Id<"conversations">, otherUser: { name: string, avatarUrl: string, clerkId: string }) => void;
 }
 
 export function Sidebar({ onSelectConversation }: SidebarProps) {

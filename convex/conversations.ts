@@ -47,7 +47,7 @@ export const getUserConversations = query({
     handler: async (ctx) => {
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) {
-            throw new Error("Unauthorized");
+            return [];
         }
 
         const myId = identity.subject;

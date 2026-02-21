@@ -6,13 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Search, MessageSquarePlus } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import debounce from "lodash.debounce";
 import { useMutation } from "convex/react";
 import { Id } from "../../../convex/_generated/dataModel";
 
 interface UserListProps {
-    onSelectConversation?: (conversationId: Id<"conversations">, otherUser: { name: string, avatarUrl: string }) => void;
+    onSelectConversation?: (conversationId: Id<"conversations">, otherUser: { name: string, avatarUrl: string, clerkId: string }) => void;
 }
 
 export function UserList({ onSelectConversation }: UserListProps) {
@@ -35,6 +35,10 @@ export function UserList({ onSelectConversation }: UserListProps) {
 
     const users = useQuery(api.users.getUsers, {
         searchTerm: debouncedSearch || undefined,
+    });
+
+    const onlineStatuses = useQuery(api.presence.getOnlineUsers, {
+        clerkIds: users ? users.map((u: { clerkId: string }) => u.clerkId) : [],
     });
 
     return (
@@ -78,17 +82,22 @@ export function UserList({ onSelectConversation }: UserListProps) {
                                         try {
                                             // Note: getOrCreateConversation uses the Clerk ID
                                             const conversationId = await createConversation({ otherUserId: user.clerkId });
-                                            onSelectConversation(conversationId, { name: user.name, avatarUrl: user.avatarUrl });
+                                            onSelectConversation(conversationId, { name: user.name, avatarUrl: user.avatarUrl, clerkId: user.clerkId });
                                         } catch (error) {
                                             console.error("Failed to create conversation:", error);
                                         }
                                     }
                                 }}
                             >
-                                <Avatar>
-                                    <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                </Avatar>
+                                <div className="relative">
+                                    <Avatar>
+                                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    {onlineStatuses?.[user.clerkId] && (
+                                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-zinc-950 rounded-full"></div>
+                                    )}
+                                </div>
                                 <div className="flex-1 overflow-hidden">
                                     <p className="font-medium truncate">{user.name}</p>
                                 </div>

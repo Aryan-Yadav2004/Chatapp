@@ -19,12 +19,16 @@ import {
 
 export function ChatWindow({ conversationId, otherUser, onBack }: {
     conversationId: Id<"conversations">,
-    otherUser: { name: string, avatarUrl: string },
+    otherUser: { name: string, avatarUrl: string; clerkId: string },
     onBack?: () => void
 }) {
     const { user } = useUser();
     const messages = useQuery(api.messages.getMessages, { conversationId });
     const deleteMessage = useMutation(api.messages.deleteMessage);
+    const onlineStatuses = useQuery(api.presence.getOnlineUsers, {
+        clerkIds: [otherUser.clerkId]
+    });
+    const isOnline = onlineStatuses?.[otherUser.clerkId] ?? false;
 
     if (messages === undefined) {
         return <div className="flex-1 flex items-center justify-center p-8 text-zinc-500">Loading messages...</div>;
@@ -44,13 +48,24 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
                     <span className="sr-only">Back</span>
                 </Button>
 
-                <Avatar className="h-10 w-10">
-                    <AvatarImage src={otherUser.avatarUrl} alt={otherUser.name} />
-                    <AvatarFallback>{otherUser.name.charAt(0)}</AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                    <Avatar className="h-10 w-10">
+                        <AvatarImage src={otherUser.avatarUrl} alt={otherUser.name} />
+                        <AvatarFallback>{otherUser.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    {isOnline && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-zinc-950 rounded-full"></div>
+                    )}
+                </div>
                 <div>
-                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{otherUser.name}</h3>
-                    {/* Optional: Add online status here in phase 7 */}
+                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">{otherUser.name}</h3>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                        {isOnline ? (
+                            <span className="text-green-600 dark:text-green-400 font-medium">Online</span>
+                        ) : (
+                            "Offline"
+                        )}
+                    </p>
                 </div>
             </div>
 
