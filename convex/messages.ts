@@ -72,3 +72,28 @@ export const getMessages = query({
         return messages;
     },
 });
+
+export const deleteMessage = mutation({
+    args: {
+        messageId: v.id("messages"),
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Unauthorized");
+        }
+
+        const myId = identity.subject;
+
+        const message = await ctx.db.get(args.messageId);
+        if (!message) {
+            throw new Error("Message not found");
+        }
+
+        if (message.sender !== myId) {
+            throw new Error("You can only delete your own messages");
+        }
+
+        await ctx.db.delete(args.messageId);
+    },
+});

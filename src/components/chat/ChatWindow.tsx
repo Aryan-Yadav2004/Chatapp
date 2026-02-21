@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
@@ -8,8 +8,14 @@ import { MessageInput } from "./MessageInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatMessageTime } from "@/lib/utils";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, MoreVertical, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function ChatWindow({ conversationId, otherUser, onBack }: {
     conversationId: Id<"conversations">,
@@ -18,6 +24,7 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
 }) {
     const { user } = useUser();
     const messages = useQuery(api.messages.getMessages, { conversationId });
+    const deleteMessage = useMutation(api.messages.deleteMessage);
 
     if (messages === undefined) {
         return <div className="flex-1 flex items-center justify-center p-8 text-zinc-500">Loading messages...</div>;
@@ -67,19 +74,46 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
                                     key={message._id}
                                     className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                                 >
-                                    <div
-                                        className={`max-w-[75%] px-4 py-2 rounded-2xl ${isMine
-                                            ? "bg-blue-600 text-white rounded-br-sm"
-                                            : "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-sm shadow-sm"
-                                            }`}
-                                    >
-                                        <p className="whitespace-pre-wrap break-words text-sm sm:text-base">{message.content}</p>
-                                        {/* Timestamp will go here in Phase 4 */}
+                                    <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} max-w-[75%]`}>
                                         <div
-                                            className={`text-[10px] sm:text-xs mt-1 text-right ${isMine ? "text-blue-100" : "text-zinc-400 dark:text-zinc-500"
+                                            className={`px-4 py-2 rounded-2xl relative group flex items-start gap-2 ${isMine
+                                                ? "bg-blue-600 text-white rounded-br-sm"
+                                                : "bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 rounded-bl-sm shadow-sm"
                                                 }`}
                                         >
-                                            {formatMessageTime(message._creationTime)}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="whitespace-pre-wrap break-words text-sm sm:text-base">{message.content}</p>
+                                                <div
+                                                    className={`text-[10px] sm:text-xs mt-1 ${isMine ? "text-blue-100/80 text-right" : "text-zinc-400 dark:text-zinc-500 text-left"
+                                                        }`}
+                                                >
+                                                    {formatMessageTime(message._creationTime)}
+                                                </div>
+                                            </div>
+
+                                            {isMine && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:bg-white/20 hover:text-white shrink-0 -mr-2"
+                                                        >
+                                                            <MoreVertical className="h-4 w-4" />
+                                                            <span className="sr-only">More options</span>
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            onClick={() => deleteMessage({ messageId: message._id })}
+                                                            className="text-red-600 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/50"
+                                                        >
+                                                            <Trash className="mr-2 h-4 w-4" />
+                                                            Delete Message
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
