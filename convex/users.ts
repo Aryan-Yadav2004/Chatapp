@@ -37,3 +37,28 @@ export const store = mutation({
         });
     },
 });
+
+export const getUsers = query({
+    args: {
+        searchTerm: v.optional(v.string())
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Unauthorized");
+        }
+
+        let users = await ctx.db.query("users").collect();
+
+        // Filter out the current user
+        users = users.filter((user) => user.clerkId !== identity.subject);
+
+        // Filter by search term if provided
+        if (args.searchTerm) {
+            const term = args.searchTerm.toLowerCase();
+            users = users.filter((user) => user.name.toLowerCase().includes(term));
+        }
+
+        return users;
+    },
+});
