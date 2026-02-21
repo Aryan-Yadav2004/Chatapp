@@ -15,14 +15,19 @@ export function ChatLayout() {
 
     return (
         <div className="flex h-screen bg-zinc-50 dark:bg-zinc-950 overflow-hidden text-zinc-900 dark:text-zinc-100">
-            <Sidebar onSelectConversation={(id, user) => setActiveConversation({ id, otherUser: user })} />
+            {/* Sidebar: hidden on mobile if there is an active conversation, shown on desktop */}
+            <div className={`${activeConversation ? 'hidden md:block' : 'block'} h-full`}>
+                <Sidebar onSelectConversation={(id, user) => setActiveConversation({ id, otherUser: user })} />
+            </div>
 
-            <main className="flex-1 flex flex-col bg-white dark:bg-zinc-900 rounded-3xl m-4 border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden shadow-zinc-200/50 dark:shadow-black/50 relative z-10">
+            {/* Chat Area: shown on mobile only if there is an active conversation, shown on desktop */}
+            <main className={`${!activeConversation ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-white dark:bg-zinc-900 md:rounded-3xl md:m-4 md:border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden shadow-zinc-200/50 dark:shadow-black/50 relative z-10 w-full`}>
                 {activeConversation ? (
                     <ChatWindow
                         key={activeConversation.id}
                         conversationId={activeConversation.id}
                         otherUser={activeConversation.otherUser}
+                        onBack={() => setActiveConversation(null)}
                     />
                 ) : (
                     <div className="flex-1 flex items-center justify-center p-8 bg-zinc-50 dark:bg-zinc-950/50">

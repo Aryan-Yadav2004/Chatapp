@@ -10,7 +10,7 @@ interface SidebarProps {
 
 export function Sidebar({ onSelectConversation }: SidebarProps) {
     return (
-        <aside className="w-80 flex-shrink-0 flex flex-col h-full bg-white dark:bg-zinc-950">
+        <aside className="w-full md:w-80 flex-shrink-0 flex flex-col h-full bg-white dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800">
             <div className="flex-1 overflow-hidden">
                 <UserList onSelectConversation={onSelectConversation} />
             </div>

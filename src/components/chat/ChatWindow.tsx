@@ -8,11 +8,14 @@ import { MessageInput } from "./MessageInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatMessageTime } from "@/lib/utils";
+import { ChevronLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useEffect, useRef } from "react";
 
-export function ChatWindow({ conversationId, otherUser }: {
+export function ChatWindow({ conversationId, otherUser, onBack }: {
     conversationId: Id<"conversations">,
-    otherUser: { name: string, avatarUrl: string }
+    otherUser: { name: string, avatarUrl: string },
+    onBack?: () => void
 }) {
     const { user } = useUser();
     const messages = useQuery(api.messages.getMessages, { conversationId });
@@ -22,9 +25,19 @@ export function ChatWindow({ conversationId, otherUser }: {
     }
 
     return (
-        <div className="flex flex-col h-full bg-zinc-50 dark:bg-black rounded-r-3xl overflow-hidden">
+        <div className="flex flex-col h-full bg-zinc-50 dark:bg-black md:rounded-r-3xl overflow-hidden">
             {/* Chat Header */}
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center gap-3 shadow-sm z-10">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden shrink-0 -ml-2"
+                    onClick={onBack}
+                >
+                    <ChevronLeft className="h-5 w-5" />
+                    <span className="sr-only">Back</span>
+                </Button>
+
                 <Avatar className="h-10 w-10">
                     <AvatarImage src={otherUser.avatarUrl} alt={otherUser.name} />
                     <AvatarFallback>{otherUser.name.charAt(0)}</AvatarFallback>
