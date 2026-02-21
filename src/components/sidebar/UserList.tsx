@@ -21,17 +21,17 @@ export function UserList({ onSelectConversation }: UserListProps) {
     const createConversation = useMutation(api.conversations.getOrCreateConversation);
 
     // Debounce the search input so we don't hammer the database on every keystroke
-    const updateSearch = useCallback(
-        debounce((value: string) => {
-            setDebouncedSearch(value);
-        }, 300),
-        []
-    );
-
     useEffect(() => {
-        updateSearch(searchTerm);
-        return () => updateSearch.cancel();
-    }, [searchTerm, updateSearch]);
+        const handler = debounce((value: string) => {
+            setDebouncedSearch(value);
+        }, 300);
+
+        handler(searchTerm);
+
+        return () => {
+            handler.cancel();
+        };
+    }, [searchTerm]);
 
     const users = useQuery(api.users.getUsers, {
         searchTerm: debouncedSearch || undefined,
