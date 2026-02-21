@@ -41,6 +41,8 @@ export function UserList({ onSelectConversation }: UserListProps) {
         clerkIds: users ? users.map((u: { clerkId: string }) => u.clerkId) : [],
     });
 
+    const unreadCounts = useQuery(api.readReceipts.getUnreadCounts);
+
     return (
         <div className="flex flex-col h-full border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
             <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -98,8 +100,13 @@ export function UserList({ onSelectConversation }: UserListProps) {
                                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-zinc-950 rounded-full"></div>
                                     )}
                                 </div>
-                                <div className="flex-1 overflow-hidden">
+                                <div className="flex-1 overflow-hidden flex items-center justify-between">
                                     <p className="font-medium truncate">{user.name}</p>
+                                    {unreadCounts?.[user.clerkId] ? (
+                                        <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center justify-center min-w-[20px]">
+                                            {unreadCounts[user.clerkId] > 99 ? "99+" : unreadCounts[user.clerkId]}
+                                        </div>
+                                    ) : null}
                                 </div>
                             </button>
                         ))}

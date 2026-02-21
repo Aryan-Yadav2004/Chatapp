@@ -30,4 +30,9 @@ export default defineSchema({
     clerkId: v.string(),
     updated: v.number(),
   }).index("by_conversation", ["conversationId"]),
+  readReceipts: defineTable({
+    conversationId: v.id("conversations"),
+    clerkId: v.string(),
+    lastReadTime: v.number(),
+  }).index("by_conversation_and_clerk", ["conversationId", "clerkId"]),
 });

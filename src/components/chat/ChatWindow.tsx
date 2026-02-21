@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
+import { useEffect } from "react";
 import { MessageInput } from "./MessageInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,6 +33,14 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
 
     const typingUsers = useQuery(api.typing.getTypingUsers, { conversationId });
     const isOtherUserTyping = typingUsers?.includes(otherUser.clerkId) ?? false;
+
+    const markRead = useMutation(api.readReceipts.markRead);
+
+    useEffect(() => {
+        if (messages) {
+            markRead({ conversationId }).catch(console.error);
+        }
+    }, [conversationId, messages, markRead]);
 
     if (messages === undefined) {
         return <div className="flex-1 flex items-center justify-center p-8 text-zinc-500">Loading messages...</div>;
