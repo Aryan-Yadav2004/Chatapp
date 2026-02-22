@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageInput } from "./MessageInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -34,13 +34,34 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
     const typingUsers = useQuery(api.typing.getTypingUsers, { conversationId });
     const isOtherUserTyping = typingUsers?.includes(otherUser.clerkId) ?? false;
 
+    // Auto-scroll state
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollViewportRef = useRef<HTMLDivElement>(null);
+    const [isUserScrolling, setIsUserScrolling] = useState(false);
+
+    // Scroll handler to detect if the user has manually scrolled up
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const target = e.currentTarget;
+        // If we're within 50px of the bottom, consider it "at the bottom" so auto-scroll works
+        const isAtBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 50;
+        setIsUserScrolling(!isAtBottom);
+    };
+
+    const scrollToBottom = () => {
+        if (!isUserScrolling) {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+    };
+
     const markRead = useMutation(api.readReceipts.markRead);
 
     useEffect(() => {
         if (messages) {
             markRead({ conversationId }).catch(console.error);
+            // Scroll to bottom when new messages arrive if not manually scrolling
+            scrollToBottom();
         }
-    }, [conversationId, messages, markRead]);
+    }, [conversationId, messages, markRead]); // Only auto-scroll when messages array changes
 
     if (messages === undefined) {
         return <div className="flex-1 flex items-center justify-center p-8 text-zinc-500">Loading messages...</div>;
@@ -81,8 +102,12 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
                 </div>
             </div>
 
-            {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4">
+            {/* Messages Area - Ensure flexible flex-col behavior and passing the handler */}
+            <ScrollArea
+                className="flex-1 p-4"
+                viewportRef={scrollViewportRef}
+                onScrollCapture={handleScroll}
+            >
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-8">
                         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-4">
@@ -146,6 +171,7 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
                                 </div>
                             );
                         })}
+                        <div ref={messagesEndRef} />
                     </div>
                 )}
             </ScrollArea>

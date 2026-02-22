@@ -9,6 +9,10 @@ export const store = mutation({
             throw new Error("Called storeUser without authentication present");
         }
 
+        const name = identity.name ?? identity.nickname ?? identity.email?.split("@")[0] ?? "Unknown User";
+        const email = identity.email ?? "";
+        const avatarUrl = identity.pictureUrl ?? "";
+
         const user = await ctx.db
             .query("users")
             .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
@@ -16,23 +20,23 @@ export const store = mutation({
 
         if (user !== null) {
             if (
-                user.name !== identity.name ||
-                user.avatarUrl !== identity.pictureUrl ||
-                user.email !== identity.email
+                user.name !== name ||
+                user.avatarUrl !== avatarUrl ||
+                user.email !== email
             ) {
                 await ctx.db.patch(user._id, {
-                    name: identity.name!,
-                    avatarUrl: identity.pictureUrl!,
-                    email: identity.email!,
+                    name,
+                    avatarUrl,
+                    email,
                 });
             }
             return user._id;
         }
 
         return await ctx.db.insert("users", {
-            name: identity.name!,
-            avatarUrl: identity.pictureUrl!,
-            email: identity.email!,
+            name,
+            avatarUrl,
+            email,
             clerkId: identity.subject,
         });
     },
@@ -61,4 +65,11 @@ export const getUsers = query({
 
         return users;
     },
+});
+
+export const getAll = query({
+    args: {},
+    handler: async (ctx) => {
+        return await ctx.db.query("users").collect();
+    }
 });

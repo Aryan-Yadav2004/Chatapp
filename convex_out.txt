@@ -1,0 +1,18 @@
+✖ Failed to run function "users:getAll":
+Error: [Request ID: 9354ad09410c3ac1] Server Error
+Could not find function for 'users:getAll'. Did you forget to run `npx convex dev` or `npx convex deploy`?
+
+Available functions:
+• conversations:getOrCreateConversation
+• conversations:getUserConversations
+• messages:sendMessage
+• messages:getMessages
+• messages:deleteMessage
+• users:store
+• users:getUsers
+• presence:heartbeat
+• presence:getOnlineUsers
+• typing:setTyping
+• typing:getTypingUsers
+• readReceipts:markRead
+• readReceipts:getUnreadCounts
