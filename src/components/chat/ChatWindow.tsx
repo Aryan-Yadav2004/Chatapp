@@ -104,9 +104,9 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
 
             {/* Messages Area - Ensure flexible flex-col behavior and passing the handler */}
             <ScrollArea
-                className="flex-1 p-4"
+                className="flex-1 min-h-0 p-4"
                 viewportRef={scrollViewportRef}
-                onScrollCapture={handleScroll}
+                onScroll={handleScroll}
             >
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-8">
