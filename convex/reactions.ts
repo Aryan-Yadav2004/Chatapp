@@ -15,19 +15,21 @@ export const toggleReaction = mutation({
 
         const clerkId = identity.subject;
 
-        // Check if this explicit reaction by this user already exists
+        // Check if the user has *any* reaction on this message
         const existingReaction = await ctx.db
             .query("reactions")
             .withIndex("by_message", (q) => q.eq("messageId", args.messageId))
-            .filter((q) => q.and(
-                q.eq(q.field("clerkId"), clerkId),
-                q.eq(q.field("reaction"), args.reaction)
-            ))
+            .filter((q) => q.eq(q.field("clerkId"), clerkId))
             .first();
 
-        // If it exists, remove it (toggle off)
         if (existingReaction) {
-            await ctx.db.delete(existingReaction._id);
+            if (existingReaction.reaction === args.reaction) {
+                // If they clicked the exact same reaction, remove it (toggle off)
+                await ctx.db.delete(existingReaction._id);
+            } else {
+                // If they clicked a different reaction, replace the old one
+                await ctx.db.patch(existingReaction._id, { reaction: args.reaction });
+            }
             return;
         }
 
