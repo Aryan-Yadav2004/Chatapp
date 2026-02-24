@@ -9,7 +9,7 @@ import { MessageInput } from "./MessageInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatMessageTime } from "@/lib/utils";
-import { ChevronLeft, MoreVertical, Trash } from "lucide-react";
+import { SmilePlus, ChevronLeft, MoreVertical, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -17,6 +17,13 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+
+const REACTIONS = ["👍", "❤️", "😂", "😮", "😢"];
 
 export function ChatWindow({ conversationId, otherUser, onBack }: {
     conversationId: Id<"conversations">,
@@ -26,6 +33,7 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
     const { user } = useUser();
     const messages = useQuery(api.messages.getMessages, { conversationId });
     const deleteMessage = useMutation(api.messages.deleteMessage);
+    const toggleReaction = useMutation(api.reactions.toggleReaction);
     const onlineStatuses = useQuery(api.presence.getOnlineUsers, {
         clerkIds: [otherUser.clerkId]
     });
@@ -143,30 +151,60 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
                                                 </div>
                                             </div>
 
-                                            {isMine && (
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
+                                            {/* Reaction Popover & Message Options */}
+                                            <div className={`flex items-center gap-1 opacity-0 group-hover:opacity-100 shrink-0 ${isMine ? "-mr-2" : "-ml-2"} transition-opacity`}>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:bg-white/20 hover:text-white shrink-0 -mr-2"
+                                                            className={`h-6 w-6 hover:bg-white/20 ${isMine ? 'hover:text-white' : 'hover:text-zinc-900 dark:hover:text-white'}`}
                                                         >
-                                                            <MoreVertical className="h-4 w-4" />
-                                                            <span className="sr-only">More options</span>
+                                                            <SmilePlus className="h-4 w-4" />
+                                                            <span className="sr-only">Add reaction</span>
                                                         </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem
-                                                            onClick={() => deleteMessage({ messageId: message._id })}
-                                                            className="text-red-600 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/50"
-                                                        >
-                                                            <Trash className="mr-2 h-4 w-4" />
-                                                            Delete Message
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            )}
+                                                    </PopoverTrigger>
+                                                    <PopoverContent side="top" align={isMine ? "end" : "start"} className="w-fit p-1 rounded-full flex gap-1 shadow-md border-zinc-200 dark:border-zinc-800">
+                                                        {REACTIONS.map((emoji) => (
+                                                            <button
+                                                                key={emoji}
+                                                                className="hover:bg-zinc-100 dark:hover:bg-zinc-800 p-2 rounded-full transition-transform hover:scale-110 active:scale-95"
+                                                                onClick={() => toggleReaction({ messageId: message._id, reaction: emoji })}
+                                                            >
+                                                                {emoji}
+                                                            </button>
+                                                        ))}
+                                                    </PopoverContent>
+                                                </Popover>
+
+                                                {isMine && (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-6 w-6 hover:bg-white/20 hover:text-white"
+                                                            >
+                                                                <MoreVertical className="h-4 w-4" />
+                                                                <span className="sr-only">More options</span>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem
+                                                                onClick={() => deleteMessage({ messageId: message._id })}
+                                                                className="text-red-600 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/50"
+                                                            >
+                                                                <Trash className="mr-2 h-4 w-4" />
+                                                                Delete Message
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                )}
+                                            </div>
                                         </div>
+
+                                        {/* Reactions Display Strip */}
+                                        <MessageReactions messageId={message._id} />
                                     </div>
                                 </div>
                             );
@@ -192,6 +230,46 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
 
             {/* Message Input Container */}
             <MessageInput conversationId={conversationId} />
+        </div>
+    );
+}
+
+function MessageReactions({ messageId }: { messageId: Id<"messages"> }) {
+    const reactions = useQuery(api.reactions.getMessageReactions, { messageId });
+    const toggleReaction = useMutation(api.reactions.toggleReaction);
+    const { user } = useUser();
+
+    if (!reactions || reactions.length === 0) return null;
+
+    // Group reactions by emoji
+    const grouped = reactions.reduce<Record<string, { count: number, users: string[] }>>((acc, curr) => {
+        if (!acc[curr.reaction]) {
+            acc[curr.reaction] = { count: 0, users: [] };
+        }
+        acc[curr.reaction].count += 1;
+        acc[curr.reaction].users.push(curr.clerkId);
+        return acc;
+    }, {});
+
+    return (
+        <div className="flex flex-wrap gap-1 mt-1 z-10 relative">
+            {Object.entries(grouped).map(([emoji, data]) => {
+                const reactionData = data as { count: number, users: string[] };
+                const hasReacted = reactionData.users.includes(user?.id ?? "");
+                return (
+                    <button
+                        key={emoji}
+                        onClick={() => toggleReaction({ messageId, reaction: emoji })}
+                        className={`flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full border transition-colors ${hasReacted
+                            ? 'bg-blue-50 border-blue-200 text-blue-600 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400'
+                            : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800'
+                            }`}
+                    >
+                        <span>{emoji}</span>
+                        {reactionData.count > 1 && <span className="font-medium">{reactionData.count}</span>}
+                    </button>
+                );
+            })}
         </div>
     );
 }

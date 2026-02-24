@@ -35,4 +35,9 @@ export default defineSchema({
     clerkId: v.string(),
     lastReadTime: v.number(),
   }).index("by_conversation_and_clerk", ["conversationId", "clerkId"]),
+  reactions: defineTable({
+    messageId: v.id("messages"),
+    clerkId: v.string(),
+    reaction: v.string(),
+  }).index("by_message", ["messageId"]),
 });
