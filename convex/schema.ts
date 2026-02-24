@@ -10,11 +10,12 @@ export default defineSchema({
   }).index("by_clerk_id", ["clerkId"]),
 
   conversations: defineTable({
-    participantOne: v.string(), // Clerk ID
-    participantTwo: v.string(), // Clerk ID
-  })
-    .index("by_participantOne", ["participantOne"])
-    .index("by_participantTwo", ["participantTwo"]),
+    participantOne: v.optional(v.string()), // Legacy field
+    participantTwo: v.optional(v.string()), // Legacy field
+    isGroup: v.optional(v.boolean()),
+    groupName: v.optional(v.string()), // Used only if it's a group
+    participants: v.optional(v.array(v.string())), // Array of Clerk IDs
+  }),
 
   messages: defineTable({
     conversationId: v.id("conversations"),

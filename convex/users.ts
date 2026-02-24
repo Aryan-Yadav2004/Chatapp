@@ -73,3 +73,27 @@ export const getAll = query({
         return await ctx.db.query("users").collect();
     }
 });
+
+export const getUsersByIds = query({
+    args: {
+        clerkIds: v.array(v.string())
+    },
+    handler: async (ctx, args) => {
+        const users = await Promise.all(
+            args.clerkIds.map(id =>
+                ctx.db
+                    .query("users")
+                    .withIndex("by_clerk_id", (q) => q.eq("clerkId", id))
+                    .unique()
+            )
+        );
+
+        // Filter out nulls and format as a dictionary
+        return users.reduce((acc: Record<string, any>, user) => {
+            if (user) {
+                acc[user.clerkId] = user;
+            }
+            return acc;
+        }, {});
+    }
+});

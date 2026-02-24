@@ -42,23 +42,19 @@ export const getUnreadCounts = query({
 
         const clerkId = identity.subject;
 
-        // 1. Get all conversations for the user
-        const conversations = await ctx.db
-            .query("conversations")
-            .filter((q) =>
-                q.or(
-                    q.eq(q.field("participantOne"), clerkId),
-                    q.eq(q.field("participantTwo"), clerkId)
-                )
-            )
-            .collect();
+        // 1. Get all conversations and filter for the user
+        const allConversations = await ctx.db.query("conversations").collect();
+        const conversations = allConversations.filter(c => (c.participants || []).includes(clerkId));
 
         const unreadCounts: Record<string, number> = {};
 
         // 2. For each conversation, calculate unread messages
         for (const conv of conversations) {
-            // Determine the OTHER participant's clerkId
-            const otherClerkId = conv.participantOne === clerkId ? conv.participantTwo : conv.participantOne;
+            // For 1-on-1 chats, we map to the other user's ID
+            // For group chats, we map to the conversation ID itself
+            const identifier = conv.isGroup
+                ? conv._id
+                : (conv.participants || []).find(p => p !== clerkId) || conv._id;
 
             // Get the user's read receipt for this conversation
             const receipt = await ctx.db
@@ -84,8 +80,10 @@ export const getUnreadCounts = query({
                 }
             }
 
-            // Map the count to the OTHER participant's clerkId so UserList can easily match it
-            unreadCounts[otherClerkId] = count;
+            // Map the count to the identifier so UserList can match it
+            if (count > 0) {
+                unreadCounts[identifier] = count;
+            }
         }
 
         return unreadCounts;

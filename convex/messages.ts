@@ -20,10 +20,7 @@ export const sendMessage = mutation({
             throw new Error("Conversation not found");
         }
 
-        if (
-            conversation.participantOne !== myId &&
-            conversation.participantTwo !== myId
-        ) {
+        if (!(conversation.participants || []).includes(myId)) {
             throw new Error("Not a participant in this conversation");
         }
 
@@ -54,10 +51,7 @@ export const getMessages = query({
             return []; // Return empty array if conversation doesn't exist yet
         }
 
-        if (
-            conversation.participantOne !== myId &&
-            conversation.participantTwo !== myId
-        ) {
+        if (!(conversation.participants || []).includes(myId)) {
             throw new Error("Not a participant in this conversation");
         }
 

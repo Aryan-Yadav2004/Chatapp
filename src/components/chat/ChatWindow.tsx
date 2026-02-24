@@ -43,6 +43,16 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
     const typingUsers = useQuery(api.typing.getTypingUsers, { conversationId });
     const isOtherUserTyping = typingUsers?.includes(otherUser.clerkId) ?? false;
 
+    // Fetch all group members if this is a group chat
+    const isGroup = !otherUser.clerkId;
+    // We get unique sender IDs from messages, or we could just get it from the conversation. 
+    // For simplicity, we'll extract all unique senders from the rendered messages if it's a group.
+    const uniqueSenderIds = isGroup && messages ? Array.from(new Set(messages.map((m: { sender: string }) => m.sender))) : [];
+
+    const groupMembers = useQuery(api.users.getUsersByIds,
+        isGroup ? { clerkIds: uniqueSenderIds } : "skip"
+    );
+
     // Auto-scroll state
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollViewportRef = useRef<HTMLDivElement>(null);
@@ -56,21 +66,17 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
         setIsUserScrolling(!isAtBottom);
     };
 
-    const scrollToBottom = () => {
-        if (!isUserScrolling) {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        }
-    };
-
     const markRead = useMutation(api.readReceipts.markRead);
 
     useEffect(() => {
         if (messages) {
             markRead({ conversationId }).catch(console.error);
             // Scroll to bottom when new messages arrive if not manually scrolling
-            scrollToBottom();
+            if (!isUserScrolling) {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }
         }
-    }, [conversationId, messages, markRead]); // Only auto-scroll when messages array changes
+    }, [conversationId, messages, markRead, isUserScrolling]); // Only auto-scroll when messages array changes
 
     if (messages === undefined) {
         return <div className="flex-1 flex items-center justify-center p-8 text-zinc-500">Loading messages...</div>;
@@ -93,21 +99,23 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
                 <div className="relative">
                     <Avatar className="h-10 w-10">
                         <AvatarImage src={otherUser.avatarUrl} alt={otherUser.name} />
-                        <AvatarFallback>{otherUser.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{!otherUser.avatarUrl ? "G" : otherUser.name.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    {isOnline && (
+                    {isOnline && otherUser.clerkId && (
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-zinc-950 rounded-full"></div>
                     )}
                 </div>
                 <div>
                     <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">{otherUser.name}</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {isOnline ? (
-                            <span className="text-green-600 dark:text-green-400 font-medium">Online</span>
-                        ) : (
-                            "Offline"
-                        )}
-                    </p>
+                    {otherUser.clerkId && (
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {isOnline ? (
+                                <span className="text-green-600 dark:text-green-400 font-medium">Online</span>
+                            ) : (
+                                "Offline"
+                            )}
+                        </p>
+                    )}
                 </div>
             </div>
 
@@ -154,6 +162,11 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
                                                 }`}
                                         >
                                             <div className="flex-1 min-w-0">
+                                                {!isMine && isGroup && groupMembers?.[message.sender] && (
+                                                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-0.5">
+                                                        {groupMembers[message.sender].name}
+                                                    </p>
+                                                )}
                                                 <p className="whitespace-pre-wrap break-words text-sm sm:text-base">{message.content}</p>
                                                 <div
                                                     className={`text-[10px] sm:text-xs mt-1 ${isMine ? "text-blue-100/80 text-right" : "text-zinc-400 dark:text-zinc-500 text-left"
@@ -242,7 +255,7 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
 
             {/* Message Input Container */}
             <MessageInput conversationId={conversationId} />
-        </div>
+        </div >
     );
 }
 

@@ -18,28 +18,60 @@ export const getOrCreateConversation = mutation({
             throw new Error("Cannot create conversation with yourself");
         }
 
-        // Sort to ensure consistent conversation finding regardless of who initiated
-        const [user1, user2] = [myId, otherUserId].sort();
+        // Fetch all conversations
+        const allConversations = await ctx.db.query("conversations").collect();
 
-        // Check if conversation already exists where participantOne is user1 AND participantTwo is user2
-        const existingConversation = await ctx.db
-            .query("conversations")
-            .withIndex("by_participantOne", (q) => q.eq("participantOne", user1))
-            .filter((q) => q.eq(q.field("participantTwo"), user2))
-            .first();
+        // Find an existing one-on-one conversation between these two exact users
+        const existingConversation = allConversations.find(
+            (conv) => {
+                const parts = conv.participants || [];
+                return !conv.isGroup &&
+                    parts.length === 2 &&
+                    parts.includes(myId) &&
+                    parts.includes(otherUserId)
+            }
+        );
 
         if (existingConversation) {
             return existingConversation._id;
         }
 
-        // Create a new conversation
+        // Create a new direct conversation
         const newConversationId = await ctx.db.insert("conversations", {
-            participantOne: user1,
-            participantTwo: user2,
+            isGroup: false,
+            participants: [myId, otherUserId],
         });
 
         return newConversationId;
     },
+});
+
+export const createGroup = mutation({
+    args: {
+        name: v.string(),
+        members: v.array(v.string()), // Array of clerkIds
+    },
+    handler: async (ctx, args) => {
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            throw new Error("Unauthorized");
+        }
+
+        const myId = identity.subject;
+
+        // Ensure the creator is in the members array
+        const finalMembers = args.members.includes(myId)
+            ? args.members
+            : [...args.members, myId];
+
+        const newConversationId = await ctx.db.insert("conversations", {
+            isGroup: true,
+            groupName: args.name,
+            participants: finalMembers,
+        });
+
+        return newConversationId;
+    }
 });
 
 export const getUserConversations = query({
@@ -52,35 +84,28 @@ export const getUserConversations = query({
 
         const myId = identity.subject;
 
-        // We have to query both indexed fields and combine them
-        const conversationsAsParticipantOne = await ctx.db
-            .query("conversations")
-            .withIndex("by_participantOne", (q) => q.eq("participantOne", myId))
-            .collect();
+        // Fetch all conversations and filter to ones where this user is a participant
+        const allConversations = await ctx.db.query("conversations").collect();
+        const myConversations = allConversations.filter(
+            (conv) => (conv.participants || []).includes(myId)
+        );
 
-        const conversationsAsParticipantTwo = await ctx.db
-            .query("conversations")
-            .withIndex("by_participantTwo", (q) => q.eq("participantTwo", myId))
-            .collect();
-
-        const allConversations = [
-            ...conversationsAsParticipantOne,
-            ...conversationsAsParticipantTwo,
-        ];
-
-        // For each conversation, fetch the other user's details and the latest message
+        // For each conversation, fetch details
         const conversationsWithDetails = await Promise.all(
-            allConversations.map(async (conv) => {
-                const otherUserId =
-                    conv.participantOne === myId
-                        ? conv.participantTwo
-                        : conv.participantOne;
+            myConversations.map(async (conv) => {
+                let otherUser = null;
 
-                // Fetch other user
-                const otherUser = await ctx.db
-                    .query("users")
-                    .withIndex("by_clerk_id", (q) => q.eq("clerkId", otherUserId))
-                    .unique();
+                if (!conv.isGroup) {
+                    // For 1-on-1, find the other participant
+                    const parts = conv.participants || [];
+                    const otherUserId = parts.find((id) => id !== myId);
+                    if (otherUserId) {
+                        otherUser = await ctx.db
+                            .query("users")
+                            .withIndex("by_clerk_id", (q) => q.eq("clerkId", otherUserId))
+                            .unique();
+                    }
+                }
 
                 // Fetch latest message
                 const latestMessage = await ctx.db
@@ -91,7 +116,10 @@ export const getUserConversations = query({
 
                 return {
                     id: conv._id,
-                    otherUser,
+                    isGroup: conv.isGroup || false,
+                    groupName: conv.groupName,
+                    participants: conv.participants,
+                    otherUser, // Only populated for 1-on-1 chats
                     latestMessage,
                     updatedAt: latestMessage ? latestMessage._creationTime : conv._creationTime,
                 };
