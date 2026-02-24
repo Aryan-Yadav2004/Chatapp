@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { MessageInput } from "./MessageInput";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatMessageTime } from "@/lib/utils";
 import { SmilePlus, ChevronLeft, MoreVertical, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -116,7 +117,18 @@ export function ChatWindow({ conversationId, otherUser, onBack }: {
                 viewportRef={scrollViewportRef}
                 onScroll={handleScroll}
             >
-                {messages.length === 0 ? (
+                {messages === undefined ? (
+                    <div className="space-y-4 pb-4">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
+                                <div className={`flex flex-col ${i % 2 === 0 ? 'items-end' : 'items-start'} w-[60%]`}>
+                                    <Skeleton className={`h-12 w-full rounded-2xl ${i % 2 === 0 ? "rounded-br-sm" : "rounded-bl-sm"}`} />
+                                    <Skeleton className="h-3 w-12 mt-1" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-8">
                         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full mb-4">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>

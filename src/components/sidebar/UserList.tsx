@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Search, MessageSquarePlus } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -63,7 +64,16 @@ export function UserList({ onSelectConversation }: UserListProps) {
 
             <ScrollArea className="flex-1">
                 {users === undefined ? (
-                    <div className="p-4 text-center text-sm text-zinc-500">Loading users...</div>
+                    <div className="p-2 space-y-1">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                            <div key={i} className="w-full flex items-center gap-3 p-3">
+                                <Skeleton className="h-10 w-10 rounded-full" />
+                                <div className="space-y-2 flex-1 relative top-1">
+                                    <Skeleton className="h-4 w-2/3" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 ) : users.length === 0 ? (
                     <div className="p-8 justify-center text-center text-sm text-zinc-500 flex flex-col items-center gap-3">
                         <div className="bg-zinc-100 p-3 rounded-full dark:bg-zinc-900">

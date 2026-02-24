@@ -6,6 +6,7 @@ import { Id } from "../../../convex/_generated/dataModel";
 import { useState, useRef, useEffect } from "react";
 import { SendHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export function MessageInput({ conversationId }: { conversationId: Id<"conversations"> }) {
     const [content, setContent] = useState("");
@@ -36,6 +37,7 @@ export function MessageInput({ conversationId }: { conversationId: Id<"conversat
             }
         } catch (error) {
             console.error("Failed to send message:", error);
+            toast.error("Failed to send message. Please try again.");
         }
     };
 
