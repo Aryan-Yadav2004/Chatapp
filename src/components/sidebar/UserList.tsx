@@ -149,8 +149,7 @@ export function UserList({ onSelectConversation }: UserListProps) {
                             // For badge calculations
                             let unreadCount = 0;
                             if (isGroup) {
-                                // Fallback: group unread badge counts can be complex, simplifying for now
-                                unreadCount = 0;
+                                unreadCount = unreadCounts?.[conv.id] || 0;
                             } else if (clerkId) {
                                 unreadCount = unreadCounts?.[clerkId] || 0;
                             }
